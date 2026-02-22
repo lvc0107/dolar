@@ -84,7 +84,7 @@ function getBlueMonthlyAverageWithCache_(year, month0) {
 
   if (count === 0) {
     Logger.log("[getBlueMonthlyAverageWithCache_] No matching data for monthKey=%s", monthKey);
-    return "No data";
+    return 1;
   }
 
   var average = sum / count;
