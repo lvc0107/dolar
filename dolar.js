@@ -15,23 +15,47 @@ function blueDollarMonth(dateInput) {
   var currentMonth0 = Number(Utilities.formatDate(today, tz, "M")) - 1; // 0-based
   Logger.log("[blueDollarMonth] Current year=%s | currentMonth0=%s", currentYear, currentMonth0);
 
-  // Current month: return latest value
-  if (year === currentYear && month0 === currentMonth0) {
-    Logger.log("[blueDollarMonth] Branch: current month -> /v2/latest");
+  // =====================================
+  // FUTURE MONTH: return latest value
+  // =====================================
+  if (year > currentYear || (year === currentYear && month0 > currentMonth0)) {
+    Logger.log("[blueDollarMonth] Branch: future month -> /v2/latest");
+
     var latestResp = UrlFetchApp.fetch("https://api.bluelytics.com.ar/v2/latest", { muteHttpExceptions: true });
     Logger.log("[blueDollarMonth] /latest HTTP=%s", latestResp.getResponseCode());
     Logger.log("[blueDollarMonth] /latest body=%s", latestResp.getContentText());
 
     var latestData = JSON.parse(latestResp.getContentText());
     var latestValue = Number(latestData.blue.value_sell);
+
     Logger.log("[blueDollarMonth] Latest blue value_sell=%s", latestValue);
     return latestValue;
   }
 
-  // Any past month: return monthly average using cache
+  // =====================================
+  // CURRENT MONTH: return latest value
+  // =====================================
+  if (year === currentYear && month0 === currentMonth0) {
+    Logger.log("[blueDollarMonth] Branch: current month -> /v2/latest");
+
+    var latestResp = UrlFetchApp.fetch("https://api.bluelytics.com.ar/v2/latest", { muteHttpExceptions: true });
+    Logger.log("[blueDollarMonth] /latest HTTP=%s", latestResp.getResponseCode());
+    Logger.log("[blueDollarMonth] /latest body=%s", latestResp.getContentText());
+
+    var latestData = JSON.parse(latestResp.getContentText());
+    var latestValue = Number(latestData.blue.value_sell);
+
+    Logger.log("[blueDollarMonth] Latest blue value_sell=%s", latestValue);
+    return latestValue;
+  }
+
+  // =====================================
+  // PAST MONTH: return monthly average
+  // =====================================
   Logger.log("[blueDollarMonth] Branch: historical monthly average");
   return getBlueMonthlyAverageWithCache_(year, month0);
 }
+
 
 function getBlueMonthlyAverageWithCache_(year, month0) {
   var monthHuman = month0 + 1; // 1..12
@@ -69,7 +93,7 @@ function getBlueMonthlyAverageWithCache_(year, month0) {
   var count = 0;
 
   historical.forEach(function (row) {
-    // Expected row.date format: YYYY-MM-DD
+
     var y = Number(String(row.date).slice(0, 4));
     var m = Number(String(row.date).slice(5, 7)); // 1..12
     var source = String(row.source || "").toLowerCase();
@@ -78,6 +102,7 @@ function getBlueMonthlyAverageWithCache_(year, month0) {
       sum += Number(row.value_sell);
       count++;
     }
+
   });
 
   Logger.log("[getBlueMonthlyAverageWithCache_] Filtered rows count=%s | sum=%s", count, sum);
@@ -96,6 +121,7 @@ function getBlueMonthlyAverageWithCache_(year, month0) {
   return average;
 }
 
+
 function normalizeDate_(dateInput, tz) {
   Logger.log("[normalizeDate_] Input=%s | typeof=%s | isDate=%s", dateInput, typeof dateInput, dateInput instanceof Date);
 
@@ -105,6 +131,7 @@ function normalizeDate_(dateInput, tz) {
   }
 
   if (typeof dateInput === "string") {
+
     // yyyy-mm-dd
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
       var isoDate = new Date(dateInput + "T00:00:00-03:00");
@@ -118,6 +145,7 @@ function normalizeDate_(dateInput, tz) {
       var d = match[1].padStart(2, "0");
       var mo = match[2].padStart(2, "0");
       var y = match[3];
+
       var parsed = new Date(y + "-" + mo + "-" + d + "T00:00:00-03:00");
       Logger.log("[normalizeDate_] Parsed d/m/yyyy -> %s", parsed);
       return parsed;
