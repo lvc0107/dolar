@@ -1,5 +1,14 @@
 function blueDollarMonth(dateInput) {
+
   var tz = Session.getScriptTimeZone();
+
+  // =====================================
+  // DEFAULT: null/undefined → today
+  // =====================================
+  if (dateInput == null || dateInput === "") {
+    dateInput = Utilities.formatDate(new Date(), tz, "yyyy-MM-dd");
+    Logger.log("[blueDollarMonth] No input provided, defaulting to today: %s", dateInput);
+  }
   Logger.log("[blueDollarMonth] Received dateInput: %s | typeof=%s | isDate=%s", dateInput, typeof dateInput, dateInput instanceof Date);
   Logger.log("[blueDollarMonth] Script timezone: %s", tz);
 
