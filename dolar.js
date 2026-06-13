@@ -164,3 +164,78 @@ function normalizeDate_(dateInput, tz) {
   Logger.log("[normalizeDate_] Unsupported format. dateInput=%s", dateInput);
   throw new Error("Unsupported date format: " + dateInput);
 }
+
+// =============================================
+// FREEZE: reemplaza fórmulas pasadas por valor estático
+// Correr manualmente o via trigger diario
+// =============================================
+function freezePastMonthCells() {
+  var tz = Session.getScriptTimeZone();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var dataRange = sheet.getDataRange();
+  var formulas = dataRange.getFormulas();
+  var values = dataRange.getValues();
+
+  var today = new Date();
+  var currentYear  = Number(Utilities.formatDate(today, tz, "yyyy"));
+  var currentMonth0 = Number(Utilities.formatDate(today, tz, "M")) - 1;
+
+  for (var row = 0; row < formulas.length; row++) {
+    for (var col = 0; col < formulas[row].length; col++) {
+      var formula = formulas[row][col];
+
+      if (!formula || formula.toLowerCase().indexOf("bluedollarmonth") === -1) continue;
+
+      var currentValue = values[row][col];
+      if (!currentValue || isNaN(Number(currentValue))) continue;
+
+      var match = formula.match(/blueDollarMonth\(([^)]*)\)/i);
+      if (!match) continue;
+
+      var arg = match[1].trim();
+
+      var dateInput;
+      if (/^[A-Z]+\d+$/i.test(arg)) {
+        dateInput = sheet.getRange(arg).getValue();
+      } else {
+        dateInput = arg.replace(/^["']|["']$/g, "");
+      }
+
+      if (!dateInput) continue;
+
+      try {
+        var input  = normalizeDate_(dateInput, tz);
+        var year   = Number(Utilities.formatDate(input, tz, "yyyy"));
+        var month0 = Number(Utilities.formatDate(input, tz, "M")) - 1;
+
+        var isPast = year < currentYear || (year === currentYear && month0 < currentMonth0);
+        if (!isPast) continue;
+
+        sheet.getRange(row + 1, col + 1).setValue(Number(currentValue));
+        Logger.log("[freezePastMonthCells] Frozen R%sC%s = %s", row + 1, col + 1, currentValue);
+
+      } catch (e) {
+        Logger.log("[freezePastMonthCells] Skipped R%sC%s: %s", row + 1, col + 1, e.message);
+      }
+    }
+  }
+
+  Logger.log("[freezePastMonthCells] Done.");
+}
+
+
+function installFreezeTrigger() {
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === "freezePastMonthCells") {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+
+  ScriptApp.newTrigger("freezePastMonthCells")
+    .timeBased()
+    .everyDays(1)
+    .atHour(3)
+    .create();
+
+  Logger.log("Trigger installed.");
+}
