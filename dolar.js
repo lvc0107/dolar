@@ -30,16 +30,63 @@ function blueDollarMonth(dateInput) {
   if (year > currentYear || (year === currentYear && month0 > currentMonth0)) {
     Logger.log("[blueDollarMonth] Branch: future month -> /v2/latest");
 
-    var latestResp = UrlFetchApp.fetch("https://api.bluelytics.com.ar/v2/latest", { muteHttpExceptions: true });
-    Logger.log("[blueDollarMonth] /latest HTTP=%s", latestResp.getResponseCode());
-    Logger.log("[blueDollarMonth] /latest body=%s", latestResp.getContentText());
+  var latestResp = UrlFetchApp.fetch(
+    "https://api.bluelytics.com.ar/v2/latest",
+    {
+      muteHttpExceptions: true,
+      headers: {
+        "Accept": "application/json"
+      }
+    }
+  );
 
-    var latestData = JSON.parse(latestResp.getContentText());
-    var latestValue = Number(latestData.blue.value_sell);
+  var statusCode = latestResp.getResponseCode();
+  var body = latestResp.getContentText();
 
-    Logger.log("[blueDollarMonth] Latest blue value_sell=%s", latestValue);
-    return latestValue;
+  Logger.log("[blueDollarMonth] /latest HTTP=%s", statusCode);
+  Logger.log("[blueDollarMonth] /latest body=%s", body);
+
+  if (statusCode !== 200) {
+    throw new Error(
+      "Bluelytics /latest returned HTTP " +
+      statusCode +
+      ". Body: " +
+      body
+    );
   }
+
+  var latestData;
+
+  try {
+    latestData = JSON.parse(body);
+  } catch (err) {
+    throw new Error(
+      "Bluelytics /latest did not return valid JSON. Body: " +
+      body
+    );
+  }
+
+  if (
+    !latestData ||
+    !latestData.blue ||
+    latestData.blue.value_sell == null
+  ) {
+    throw new Error(
+      "Bluelytics response missing blue.value_sell. Response: " +
+      body
+    );
+  }
+  var latestValue = Number(latestData.blue.value_sell);
+
+  if (isNaN(latestValue)) {
+    throw new Error(
+      "blue.value_sell is not numeric. Value: " +
+      latestData.blue.value_sell
+    );
+  }
+  Logger.log("[blueDollarMonth] Latest blue value_sell=%s", latestValue);
+  return latestValue;
+}
 
   // =====================================
   // CURRENT MONTH: return latest value
