@@ -14,15 +14,17 @@ function getLatestBlueCached_() {
   var cachedTs  = Number(props.getProperty("LATEST_BLUE_TS") || 0);
   var now       = Date.now();
   var TTL_MS    = 6 * 60 * 60 * 1000; // 6 hours
+  var enable_cache = true;
 
   if (cachedVal !== null && (now - cachedTs) < TTL_MS) {
     Logger.log("[getLatestBlueCached_] Cache hit — value=%s, age=%s ms", cachedVal, now - cachedTs);
-    return Number(cachedVal);
+    if (enable_cache)
+      return Number(cachedVal);
   }
-
+  const URL = "https://api.bluelytics.com.ar/v2/latest"
+  //const URL = "https://api.arqfinance.com/v1/tickers?currencies=ARS"
   Logger.log("[getLatestBlueCached_] Cache miss — fetching Bluelytics /latest");
-
-  var resp = UrlFetchApp.fetch("https://api.bluelytics.com.ar/v2/latest", {
+  var resp = UrlFetchApp.fetch(URL, {
     muteHttpExceptions: true,
     headers: { "Accept": "application/json" }
   });
@@ -48,7 +50,6 @@ function getLatestBlueCached_() {
   Logger.log("[getLatestBlueCached_] Fetched and cached value=%s", value);
   return value;
 }
-
 // ─────────────────────────────────────────────
 
 /**

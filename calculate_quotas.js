@@ -92,6 +92,7 @@ function calculateColumns() {
       sheet.getRange(rowNum, COL_W).clearContent();
       sheet.getRange(rowNum, COL_X).setValue("");
       sheet.getRange(rowNum, COL_Y).setValue(installments_paid);
+
       continue;
     }
 
@@ -123,6 +124,7 @@ function calculateColumns() {
         w_available - 20000;
 
       var x;
+
       if (surplus <= 0) {
         x = 0;
       } else if (surplus <= 500) {
@@ -145,6 +147,7 @@ function calculateColumns() {
     }
 
     var x_value;
+
     if (plan_finished) {
       x_value = "Plan Finished";
     } else if (
@@ -167,9 +170,9 @@ function calculateColumns() {
           String(last_installment);
       } else {
         x_value =
-          first_installment +
+          last_installment +
           " to " +
-          last_installment;
+          first_installment;
       }
     }
 
