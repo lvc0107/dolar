@@ -7,11 +7,19 @@ function calculateColumns() {
 
   var START_ROW = 20;
   var END_ROW = 200;
+
+  // Columns
   var COL_C = 3;
   var COL_S = 19;
   var COL_W = 23;
   var COL_X = 24;
   var COL_Y = 25;
+
+  // Business constants
+  var TOTAL_INSTALLMENTS = 84;
+  var PAYMENT_BASE = 30000;
+  var INITIAL_PHASE_LIMIT = 20500;
+  var INSTALLMENT_AMOUNT = 500;
 
   Logger.log("Calling SpreadsheetApp.flush()");
 
@@ -103,7 +111,7 @@ function calculateColumns() {
     var w, installments_to_pay;
 
     var remaining_installments =
-      84 - installments_paid;
+      TOTAL_INSTALLMENTS - installments_paid;
 
     var plan_finished =
       c >= remaining_installments;
@@ -113,7 +121,7 @@ function calculateColumns() {
       installments_to_pay = 0;
     } else if (
       initial_phase &&
-      w_available <= 20500
+      w_available <= INITIAL_PHASE_LIMIT
     ) {
       w = w_available;
       installments_to_pay = 0;
@@ -121,17 +129,17 @@ function calculateColumns() {
       initial_phase = false;
 
       var surplus =
-        w_available - 20000;
+        w_available - PAYMENT_BASE;
 
       var x;
 
       if (surplus <= 0) {
         x = 0;
-      } else if (surplus <= 500) {
+      } else if (surplus <= INSTALLMENT_AMOUNT) {
         x = 1;
       } else {
         x = Math.floor(
-          surplus / 500
+          surplus / INSTALLMENT_AMOUNT
         );
       }
 
@@ -143,7 +151,7 @@ function calculateColumns() {
 
       w =
         w_available -
-        installments_to_pay * 500;
+        installments_to_pay * INSTALLMENT_AMOUNT;
     }
 
     var x_value;
@@ -156,7 +164,7 @@ function calculateColumns() {
       x_value = "None";
     } else {
       var last_installment =
-        84 - installments_paid;
+        TOTAL_INSTALLMENTS - installments_paid;
 
       var first_installment =
         last_installment -
@@ -193,7 +201,7 @@ function calculateColumns() {
     w_prev = w;
     installments_paid = y_value;
 
-    if (y_value >= 84) {
+    if (y_value >= TOTAL_INSTALLMENTS) {
       Logger.log(
         "Plan completed at row " +
         rowNum
